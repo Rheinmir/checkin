@@ -1,0 +1,6 @@
+node_modules
+dist
+.git
+.env
+_legacy
+temp_project
