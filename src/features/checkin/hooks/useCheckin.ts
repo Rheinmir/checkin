@@ -51,6 +51,7 @@ export const useCheckin = () => {
     searchQuery,
     setSearchQuery,
     handleCheckin,
-    stats
+    stats,
+    setGuests
   };
 };
