@@ -8,11 +8,13 @@ import {
   Upload,
   X,
   Zap,
-  Download
+  Download,
+  ScanLine
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCheckin } from './features/checkin/hooks/useCheckin';
 import { CheckinTable } from './features/checkin/components/CheckinTable';
+import { QRScanner } from './components/QRScanner';
 import type { Guest } from './features/checkin/types';
 
 const App = () => {
@@ -20,7 +22,30 @@ const App = () => {
   const [showDropzone, setShowDropzone] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle QR scan result - search for the scanned ID and check-in
+  const handleQRScan = useCallback((scannedData: string) => {
+    // Try to find guest by ID (field1) or name (field2)
+    const guest = guests.find(
+      g => g.field1.toLowerCase() === scannedData.toLowerCase() ||
+           g.field2.toLowerCase() === scannedData.toLowerCase() ||
+           g.id === scannedData
+    );
+    
+    if (guest) {
+      if (!guest.checkedIn) {
+        handleCheckin(guest.id);
+        alert(`✓ Check-in thành công: ${guest.field2}`);
+      } else {
+        alert(`⚠ ${guest.field2} đã check-in rồi!`);
+      }
+    } else {
+      alert(`✕ Không tìm thấy khách với mã: ${scannedData}`);
+    }
+    setShowQRScanner(false);
+  }, [guests, handleCheckin]);
 
   const processExcelFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -148,6 +173,14 @@ const App = () => {
               <span className="hidden xs:inline">Tải về</span>
               <span className="xs:hidden">↓</span>
             </button>
+            <button 
+              onClick={() => setShowQRScanner(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium bg-purple-500 text-white border border-purple-600 hover:bg-purple-600 transition-all shadow-sm active:scale-95"
+            >
+              <ScanLine size={12} />
+              <span className="hidden xs:inline">Quét QR</span>
+              <span className="xs:hidden">QR</span>
+            </button>
             <button className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[11px] sm:text-xs font-medium shadow-sm hover:bg-blue-600 active:scale-95 transition-all">
               <Share2 size={12} />
               <span className="hidden sm:inline">Đồng bộ MS Share</span>
@@ -256,6 +289,14 @@ const App = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScanner 
+          onScan={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
     </div>
   );
 };
